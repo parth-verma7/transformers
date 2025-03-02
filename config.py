@@ -5,7 +5,7 @@ def get_config():
         'batch_size': 8,
         'num_epochs': 1,
         'lr': 10**-4,
-        'seq_len': 450,
+        'seq_len': 150,
         'lang_src': 'english',
         'lang_tgt': 'hindi',
         'dataset': "Aarif1430/english-to-hindi",
