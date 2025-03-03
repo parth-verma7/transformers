@@ -3,9 +3,9 @@ from pathlib import Path
 def get_config():
     return {
         'batch_size': 8,
-        'num_epochs': 1,
+        'num_epochs': 10,
         'lr': 10**-4,
-        'seq_len': 150,
+        'seq_len': 250,
         'lang_src': 'english',
         'lang_tgt': 'hindi',
         'dataset': "Aarif1430/english-to-hindi",
