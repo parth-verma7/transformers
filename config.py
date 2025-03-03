@@ -9,10 +9,10 @@ def get_config():
         'lang_src': 'english',
         'lang_tgt': 'hindi',
         'dataset': "Aarif1430/english-to-hindi",
-        'model_folder': 'weights',
+        'model_folder': '/content/drive/MyDrive/transformers/weights',
         'model_basename': 'tmodel_',
         'preload' : None,
-        'tokenizer_file': "tokenizer_{0}.json",
+        'tokenizer_file': "/content/drive/MyDrive/transformers/tokenizers/tokenizer_{0}.json",
         'experiment_name': "runs/tmodel",
         'd_model': 512
     }

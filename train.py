@@ -139,7 +139,8 @@ def train_model(config):
     print("Using device:", device)
 
     # Make sure the weights folder exists
-    Path(f"{config['model_folder']}").mkdir(parents=True, exist_ok=True)
+    weights_folder = Path(config['model_folder'])
+    weights_folder.mkdir(parents=True, exist_ok=True)
 
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
     model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
@@ -152,13 +153,18 @@ def train_model(config):
     initial_epoch = 0
     global_step = 0
     
-    if config['preload']:
-        model_filename = get_weights_file_path(config, config['preload'])
-        print(f'Preloading model {model_filename}')
-        state = torch.load(model_filename)
-        initial_epoch = state['epoch'] + 1
-        optimizer.load_state_dict(state['optimizer_state_dict'])
-        global_step = state['global_step']
+    if config['preload'] and weights_folder.exists():
+        model_files = sorted(weights_folder.glob(f"{config['model_basename']}*.pt"))
+        if model_files:
+            latest_model = model_files[-1]  # Load the most recent model
+            print(f'Preloading model {latest_model}')
+            state = torch.load(latest_model)
+            model.load_state_dict(state['model_state_dict'])  # Load model weights
+            optimizer.load_state_dict(state['optimizer_state_dict'])  # Load optimizer state
+            initial_epoch = state['epoch'] + 1
+            global_step = state['global_step']
+        else:
+            print("No weights found, starting from scratch.")
     else:
         print('No model to preload, starting from scratch')
 
