@@ -52,7 +52,7 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
     model.eval()
     count = 0
 
-    source_texts = []
+    source_text = []
     expected = []
     predicted = []
 
