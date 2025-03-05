@@ -102,11 +102,11 @@ def get_or_build_tokenizer(config, ds, lang):
     return tokenizer
 
 def get_ds(config):
-    ds_raw = load_dataset(config['dataset'], split='train').shuffle(seed=42).select(range(10000))
+    ds_raw = load_dataset(config['dataset'], split='train').select(range(1000))
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config['lang_src'])
     tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config['lang_tgt'])
 
-    train_ds_size = int(0.9 * len(ds_raw))
+    train_ds_size = int(0.99 * len(ds_raw))
     val_ds_size = len(ds_raw) - train_ds_size
     train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
     
