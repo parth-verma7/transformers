@@ -3,7 +3,7 @@ from pathlib import Path
 def get_config():
     return {
         'batch_size': 8,
-        'num_epochs': 1,
+        'num_epochs': 10,
         'lr': 10**-4,
         'seq_len': 250,
         'lang_src': 'english',
@@ -11,7 +11,7 @@ def get_config():
         'dataset': "Aarif1430/english-to-hindi",
         'model_folder': '/content/drive/MyDrive/transformers/weights',
         'model_basename': 'tmodel_',
-        'preload' : None,
+        'preload' : True,
         'tokenizer_file': "/content/drive/MyDrive/transformers/tokenizers/tokenizer_{0}.json",
         'experiment_name': "runs/tmodel",
         'd_model': 512
