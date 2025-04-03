@@ -55,6 +55,7 @@ class PositionalEncoding(nn.Module):
         pe = torch.zeros(seq_len, d_model)
         # for every word in seq_len there is a vector of size d_model
         # agar upar dekho toh jiss shape mein embeddings bnn rhi thi vesa hee h
+        # but yahan pe seq_len generally maximum sequence length denote krta h
         '''
             torch.Size([3, 5])
             tensor([[0., 0., 0., 0., 0.],
@@ -103,6 +104,11 @@ class PositionalEncoding(nn.Module):
             If you try to add pe of length 100 to input of length 50, you'd get a shape mismatch error
             The tensors must have matching dimensions for addition
         '''
+        
+        '''
+            The dropout in `PositionalEncoding` prevents overfitting by randomly zeroing out elements in the positional-encoded embeddings, 
+            ensuring the model generalizes well and does not overly rely on fixed positional patterns.
+        '''
         return self.dropout(x)
 
 
@@ -122,7 +128,7 @@ class LayerNormalization(nn.Module):
     '''
     def __init__(self, eps: float = 10** -6):
         super().__init__()
-        self.eps = eps
+        self.eps = eps # to prevent division by zero during normalization.
         self.alpha = nn.Parameter(torch.ones(1)) # multiplied
         self.bias = nn.Parameter(torch.zeros(1)) # added
 
@@ -190,13 +196,13 @@ class FeedForward(nn.Module):
     '''
     def __init__(self, d_model: int, d_ff: int, dropout: float):
         super().__init__()
-        self.linear1 = nn.Linear(d_model, d_ff)
-        self.dropout = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(d_ff, d_model)
+        self.linear1 = nn.Linear(d_model, d_ff) # dimensionality transformation
+        self.dropout = nn.Dropout(dropout)   # Regularization technique
+        self.linear2 = nn.Linear(d_ff, d_model) # dimensionality transformation
 
     def forward(self, x):
         # (Batch, seq_len, d_model) -> (Batch, seq_len, d_ff) -> (Batch, seq_len, d_model)
-        return self.linear2(self.dropout(torch.relu(self.linear1(x)))) # relu activation function is used
+        return self.linear2(self.dropout(torch.relu(self.linear1(x)))) # relu activation function is used to bring Non-Linearity
     
 
 class MultiHeadSelfAttentionBlock(nn.Module):
@@ -223,6 +229,12 @@ class MultiHeadSelfAttentionBlock(nn.Module):
         if mask is not None:
             attention_scores = attention_scores.masked_fill(mask == 0, -1e9)
 
+        '''
+            The softmax function is used in the attention mechanism to:
+            Normalize raw attention scores into a probability distribution.
+            Ensure the model focuses on the most relevant tokens while still considering others.
+            Provide a stable and interpretable way to compute weighted combinations of value vectors.
+        '''
         attention_scores = torch.softmax(attention_scores, dim = -1) # (Batch, h, seq_len, seq_len)
         if dropout is not None:
             attention_scores = dropout(attention_scores)
@@ -234,6 +246,13 @@ class MultiHeadSelfAttentionBlock(nn.Module):
         value = self.w_v(v) # (Batch, seq_len, d_model) -> (Batch, seq_len, d_model)
 
         # (Batch, seq_len, d_model) -> (Batch, seq_len, h, d_k) -> (Batch, h, seq_len, d_k)
+        '''
+            here for seq_len we are uisng -1 because we dont know what could be the size of input sequence and thus -1 
+            indicates using the same dimension
+
+            If you replace -1 with query.shape[1], the code will break in cases where the 
+            sequence length (seq_len) is not the same as the inferred dimension. For example:
+        '''
         query = query.view(query.shape[0], -1, self.h, self.d_k).transpose(1, 2)
         key = key.view(key.shape[0], -1, self.h, self.d_k).transpose(1, 2)
         value = value.view(value.shape[0], -1, self.h, self.d_k).transpose(1, 2)
@@ -286,8 +305,8 @@ class Encoder(nn.Module):
 
 class DecoderBlock(nn.Module):
     '''
-        In the multi-head attention block of decoder, value and key coems from encoder whereas query comes from Masked multi head attention block i.e. why it is called cross attention
-        whereas in masked multi head attention, query, key and value are the same only i.e. the same as input
+        In the multi-head attention block of decoder, value and key comes from encoder whereas query comes from Masked multi head attention block 
+        i.e. why it is called cross attention whereas in masked multi head attention, query, key and value are the same only i.e. the same as input
     '''
     def __init__(self, self_attention_block: MultiHeadSelfAttentionBlock, cross_attention_block: MultiHeadSelfAttentionBlock, feed_forward_block: FeedForward, dropout: float):
         super().__init__()
@@ -318,6 +337,12 @@ class Decoder(nn.Module):
 class ProjectionLayer(nn.Module):
     '''
         Mentioned as Linear layer in Attention Research Paper
+
+        The ProjectionLayer is the final step in the Transformer model. 
+        1. Projects the decoder's output from the d_model space to the vocab_size space using a linear layer.
+        2. Converts the logits into log-probabilities using log_softmax.
+        3. Outputs a tensor of shape (Batch, seq_len, vocab_size), where each token in the sequence has a probability distribution over the vocabulary.
+        This layer is essential for generating predictions and computing the loss during training.
     '''
     def __init__(self, d_model: int, vocab_size: int):
         super().__init__()
@@ -356,7 +381,7 @@ class Transformer(nn.Module):
 
     def decode(self, encoder_output: torch.Tensor, src_mask: torch.Tensor, tgt: torch.Tensor, tgt_mask: torch.Tensor):
         tgt = self.tgt_embed(tgt)
-        tgt = self.tgt_pos((tgt))
+        tgt = self.tgt_pos(tgt)
         return self.decoder(tgt, encoder_output, src_mask, tgt_mask)
 
     def project(self, x):
